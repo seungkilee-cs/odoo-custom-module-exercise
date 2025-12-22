@@ -1,0 +1,29 @@
+# --- Python bytecode ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Virtual envs ---
+.venv/
+venv/
+env/
+ENV/
+
+# --- Test / tooling ---
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# --- Editors/OS ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- Odoo / local runtime ---
+*.log
+odoo.conf
+*.sqlite3
+
