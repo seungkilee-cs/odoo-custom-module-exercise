@@ -1,6 +1,6 @@
 # Odoo Custom Module Exercise
 
-Customizing Odoo ERP Modules for functionalities.
+Customizing Odoo ERP Modules for implementation of sales-purchase app records links, creating PO directly from SO screen, and smart button to navigate between the linked records across the two apps.
 
 ## Requirements
 
@@ -16,15 +16,20 @@ Customizing Odoo ERP Modules for functionalities.
 3. git clone this repo
 4. rename the repo to a custom module wrapper (like `custom_addon`)
 5. in the odoo.conf add the addon
+6. Start Odoo with your config `./odoo-bin -c odoo.conf`
+7. In the App page, search for `sale_purchase_link` module (make sure to search for all, not just app)
+![app_search](./assets/0__app_search.png)
+8. once the module is found, upgrade it (or you can run it with `./odoo-bin -c odoo.conf -u sale_purchase_link` upon the odoo startup)
+![module_search](./assets/0__module_search.png)
 
-example of odoo.conf (make sure other db configs are present, but add the addons_path, or add the custom module directory to the addons_path config.)
+Here is an example of odoo.conf at the odoo root. make sure other db configs are present, and in the conf addons_path includes the original addons which should be `addons`, as well as the module `custom_addons`. You could also include the addons_path as a flag.
 
-```
+```odoo.conf
 [options]
-addons_path = {PATH_TO_ODOO}/addons, {PATH_TO_ODOO}/custom_addons
+addons_path = {PATH_TO_ODOO}/odoo/addons,{PATH_TO_ODOO}/odoo/custom_addons
+db_host = HOSTNAME
+db_port = DBPORT
 ```
-
-make sure the addons_path includes the original addons which should be `addons`, as well as `custom_addons`
 
 ## Screenshots of the Workflow
 
@@ -57,3 +62,6 @@ make sure the addons_path includes the original addons which should be `addons`,
 - Button only appears if there is a Purchase Order tied to the Sales Order (or vice versa)
 - From the Sales Order Record, can navigate to PO using "Purchase" button (default behavior, but the full custom logic is in place in case we want to replace it)
 - From the Purchase Order Record, can navigate to SO using "Sales Order" button (custom smart button implementation.)
+
+![smart_button_calls](./assets/4_smart_button_navigation.png)
+- Calls for the smart button navigation as it appears on the server side.
