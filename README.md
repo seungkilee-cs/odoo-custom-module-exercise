@@ -27,3 +27,18 @@ addons_path = {PATH_TO_ODOO}/addons, {PATH_TO_ODOO}/custom_addons
 make sure the addons_path includes the original addons which should be `addons`, as well as `custom_addons`
 
 ## Screenshots of the Workflow
+
+### 1. Create Purchase Order Button on a Sales Order Record
+![sales_order](./assets/0_Sales_Order.png)
+
+- Button named
+
+### 2. Purchase Order Created with same Product and Quantity
+![purchase_order](./assets/1_Purchase_Order_Created_From_Button.png)
+
+- The Purchase Order Record Price is defaulted to 0
+- The Purchase Order Record Vendor is defaulted based on product info or fallback
+
+### 3. (Bonus) Smart Buttons to Navigate between Sales Order and Purchase Order
+
+- Button only appears if there is a Purchase Order tied to the Sales Order (or vice versa)
