@@ -1,22 +1,50 @@
 # -*- coding: utf-8 -*-
 
-from odoo import _, fields, models
+from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
+    purchase_order_ids = fields.One2many(
+        comodel_name="purchase.order",
+        inverse_name="sale_order_id",
+        string="Purchase Orders",
+        copy=False,
+        help="Purchase Orders created from this Sales Order.",
+    )
+
+    purchase_order_count = fields.Integer(
+        string="PO Count",
+        compute="_compute_purchase_order_count",
+        store=False,
+        help="Number of Purchase Orders linked to this Sales Order.",
+    )
+
+    @api.depends("purchase_order_ids")
+    def _compute_purchase_order_count(self):
+        """Compute the number of linked purchase orders."""
+        for order in self:
+            order.purchase_order_count = len(order.purchase_order_ids)
+
+    # -------------------------------------------------------------------------
+    # Actions
+    # -------------------------------------------------------------------------
+
     def action_create_purchase_order(self):
         """
         Create a Purchase Order (RFQ) from this Sales Order.
 
-        - Vendor default strategy:
-            1) First available vendor on any product (seller_ids)
-            2) Any existing supplier (supplier_rank > 0)
-            3) Create a fallback supplier 'TBD Vendor'
+        - If a PO already exists, open the existing PO(s) instead of creating.
+        - purchase.order requires a Vendor (partner_id), so default one.
+        - Link PO back to SO via purchase.order.sale_order_id.
         """
         self.ensure_one()
+
+        # Enforce UI expectation in server-side logic too.
+        if self.purchase_order_ids:
+            return self.action_view_purchase_orders()
 
         if not self.order_line:
             raise UserError(
@@ -33,11 +61,10 @@ class SaleOrder(models.Model):
 
         vendor = self._spl_get_default_vendor()
         if not vendor:
-            # this should be rare, but keep a hard stop just in case that the vendor creation is blocked by access rules.
             raise UserError(
                 _(
                     "Cannot create a Purchase Order because no vendor could be determined or created. "
-                    "Please create at least one Vendor (res.partner with supplier_rank > 0)."
+                    "Please create at least one Vendor."
                 )
             )
 
@@ -46,7 +73,8 @@ class SaleOrder(models.Model):
             "company_id": self.company_id.id,
             "currency_id": self.currency_id.id,
             "date_order": fields.Datetime.now(),
-            "partner_id": vendor.id,  # required field on purchase.order -> may need to overwrite this, or just default to a value
+            "partner_id": vendor.id,
+            "sale_order_id": self.id,
             "order_line": po_lines_cmds,
         }
 
@@ -61,51 +89,86 @@ class SaleOrder(models.Model):
             "target": "current",
         }
 
+    def action_view_purchase_orders(self):
+        """
+        Smart button handler: open related Purchase Orders.
+        -> The default behavior actually handles this,
+        so the smart button on Sales Order side does not actually call this function.
+        But to show the understanding of the logic, I am adding this here like we did for the purchase order side
+        smart button, so we can just uncomment on the view if needed.
+        """
+        self.ensure_one()
+        orders = self.purchase_order_ids
+        if not orders:
+            raise UserError(_("No Purchase Orders are linked to this Sales Order."))
+
+        if len(orders) == 1:
+            return {
+                "type": "ir.actions.act_window",
+                "name": _("Purchase Order"),
+                "res_model": "purchase.order",
+                "view_mode": "form",
+                "res_id": orders.id,
+                "target": "current",
+            }
+
+        return {
+            "type": "ir.actions.act_window",
+            "name": _("Purchase Orders"),
+            "res_model": "purchase.order",
+            "view_mode": "list,form",
+            "domain": [("id", "in", orders.ids)],
+            "target": "current",
+        }
+
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
+
     def _spl_get_default_vendor(self):
         """
         Choose a default vendor so PO creation can succeed (partner_id is required).
+
+        Default Case - First vendor from product template sellers (seller_ids.partner_id)
+        Fallback Case - Any existing supplier (supplier_rank > 0)
+            -> may need to swap with TBD Vendor,
+            but the requirements on this logic was not precisely part of the exercise, so I am taking the liberty.
+        No Vendor Case - Create a placeholder vendor 'TBD Vendor'
         """
         self.ensure_one()
 
-        # 1) Try to find vendor from products' seller lists.
-        # seller_ids usually live on product.template, but may be reachable from product.product too.
         for line in self.order_line:
             product = line.product_id
             if not product:
                 continue
 
-            # Prefer template sellers for compatibility.
             tmpl = getattr(product, "product_tmpl_id", False)
             seller_ids = getattr(tmpl, "seller_ids", False) if tmpl else False
             if not seller_ids:
                 seller_ids = getattr(product, "seller_ids", False)
 
-            # seller record field name is typically `partner_id`
             if seller_ids:
                 seller = seller_ids[:1]
                 partner = getattr(seller, "partner_id", False)
                 if partner:
                     return partner
 
-        # fallback: any supplier in the system.
         vendor = self.env["res.partner"].search([("supplier_rank", ">", 0)], limit=1)
         if vendor:
             return vendor
 
-        # last resort: create a placeholder vendor (keeps the flow working).
         try:
             return self.env["res.partner"].create(
-                {
-                    "name": "TBD Vendor",
-                    "supplier_rank": 1,
-                }
+                {"name": "TBD Vendor", "supplier_rank": 1}
             )
         except Exception:
             return False
 
     def _spl_prepare_purchase_order_lines(self):
         """
-        Build purchase.order.order_line commands from sale.order.line.
+        Build purchase.order.line commands from sale.order.line.
+        - purchase.order.line uses product_uom_id
+        - sale.order.line uses product_uom_id
         """
         self.ensure_one()
         commands = []
@@ -115,14 +178,10 @@ class SaleOrder(models.Model):
             if not product:
                 continue
 
-            # Skip services for this minimal flow.
+            # minimal flow case
             if getattr(product, "type", None) == "service":
                 continue
 
-            # resolve purchase UoM robustly:
-            # most specific case: product.product_tmpl_id.uom_po_id (if present)
-            # broader case: line.product_uom_id
-            # general fallback: product.uom_id
             tmpl = getattr(product, "product_tmpl_id", False)
             uom_po = getattr(tmpl, "uom_po_id", False) if tmpl else False
             if not uom_po:
@@ -136,14 +195,19 @@ class SaleOrder(models.Model):
                     % product.display_name
                 )
 
-            line_vals = {
-                "product_id": product.id,
-                "name": product.display_name,
-                "product_qty": line.product_uom_qty,
-                "product_uom_id": uom_po.id,
-                "price_unit": 0.0,
-                "date_planned": fields.Datetime.now(),
-            }
-            commands.append((0, 0, line_vals))
+            commands.append(
+                (
+                    0,
+                    0,
+                    {
+                        "product_id": product.id,
+                        "name": product.display_name,
+                        "product_qty": line.product_uom_qty,
+                        "product_uom_id": uom_po.id,
+                        "price_unit": 0.0,
+                        "date_planned": fields.Datetime.now(),
+                    },
+                )
+            )
 
         return commands

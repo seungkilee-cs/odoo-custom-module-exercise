@@ -5,9 +5,9 @@ Customizing Odoo ERP Modules for functionalities.
 ## Requirements
 
 - [x] 1. On the Sales Order record, be able to create a Purchase order that uses the same product and quantity as the Sales Order
-- [ ] 2. Purchase Order seems to have one to one relationship to sales order, but cannot infer the DB details from the purchase order. It makes sense, but for now we can just have the button hidden once there are at least one Purchase Order for Sales Order.
-- [ ] 3. Vendor on the created Purchase Record is left null (overwrite default Odoo ORM behavior for requiring Vendor as a field)
-- [ ] 4. (Bonus) Add Smart Buttons to navigate between the Sales and Purchase Orders
+- [x] 2. Create PO button is invisible after the initial PO creation from the Sales Order. (Purchase Order seems to have one to one relationship to sales order, but cannot infer the DB details from the purchase order. It makes sense, but for now we can just have the button hidden once there are at least one Purchase Order for Sales Order.)
+- [x] 3. Edge Case Validations (null SO line, deposit as SO line, multi-item including invalid line)
+- [x] 4. (Bonus) Add Smart Buttons to navigate between the Sales and Purchase Orders
 
 ## How to Run
 
@@ -28,17 +28,32 @@ make sure the addons_path includes the original addons which should be `addons`,
 
 ## Screenshots of the Workflow
 
-### 1. Create Purchase Order Button on a Sales Order Record
-![sales_order](./assets/0_Sales_Order.png)
+### 0. Basic Validations
+![null_validation](./assets/0_null_line_validation.png)
+![deposit_validation](./assets/0_deposit_line_validation.png)
 
-- Button named
+- disallow faulty data input by checking on Sales order line entry
+- also checks for edge case of invalid order lines for the purchase order (deposit)
+
+### 1. Create Purchase Order Button on a Sales Order Record
+![create_new](./assets/1_create_valid_sales_order.png)
+![created_new](./assets/2_multi_item_sales.png)
+
+- "Create PO" button appears grouped with the other primary buttons
+- test with multi-item Sales Order lines, including a valid Sales Order line (deposit) that is simulatneously invalid for Purchase Order line.
 
 ### 2. Purchase Order Created with same Product and Quantity
-![purchase_order](./assets/1_Purchase_Order_Created_From_Button.png)
+![purchase_order](./assets/3_multi_item_purchase_order_created.png)
 
 - The Purchase Order Record Price is defaulted to 0
-- The Purchase Order Record Vendor is defaulted based on product info or fallback
+- The Purchase Order Record Vendor is defaulted based on business logic using product info or fallback
+- Redirected to the PO page upon creation
+- Once the PO is created, Smart Button appears for SO <-> PO Navigation (Sales Order Button)
+- Can no longer see the "Create PO" button on Sales Order record.
 
 ### 3. (Bonus) Smart Buttons to Navigate between Sales Order and Purchase Order
+![smart_button](./assets/4_purchase_order_button_default.png)
 
 - Button only appears if there is a Purchase Order tied to the Sales Order (or vice versa)
+- From the Sales Order Record, can navigate to PO using "Purchase" button (default behavior, but the full custom logic is in place in case we want to replace it)
+- From the Purchase Order Record, can navigate to SO using "Sales Order" button (custom smart button implementation.)
