@@ -143,7 +143,7 @@ Wait for Odoo to fully start. You should see "server ready" in the logs.
 4. Click the "Install" button
 ![module_search](./assets/0__module_search.png)
 
-The module will be installed and you should see "Module installed" confirmation message.
+The module will be installed and you should see "Module installed" confirmation message. For upgrading, click on the three dot (⋮) icon and click on upgrade.
 
 ### Alternative: Install via Command Line
 
