@@ -1,37 +1,40 @@
-# Odoo Custom Module Exercise
+# Odoo Sale-Purchase Link Module
 
-Customizing Odoo ERP Modules for implementation of sales-purchase app records links, creating PO directly from SO screen, and smart button to navigate between the linked records across the two apps.
+Creates Purchase Orders directly from Sales Orders with smart navigation buttons and comprehensive validation.
 
-## Requirements
+## Features
 
-- [x] 1. On the Sales Order record, be able to create a Purchase order that uses the same product and quantity as the Sales Order
-- [x] 2. Create PO button is invisible after the initial PO creation from the Sales Order. (Purchase Order seems to have one to one relationship to sales order, but cannot infer the DB details from the purchase order. It makes sense, but for now we can just have the button hidden once there are at least one Purchase Order for Sales Order.)
-- [x] 3. Edge Case Validations (null SO line, deposit as SO line, multi-item including invalid line)
-- [x] 4. (Bonus) Add Smart Buttons to navigate between the Sales and Purchase Orders
+### Main Functionality
+- Create PO from SO with same products and quantities
+- Hide "Create PO" button after first PO is created
+- Edge case validation (null lines, deposits, multi-items)
 
-## How to Run
+### Bonus
+- Smart buttons for bidirectional SO <-> PO navigation
 
-1. Make sure Odoo 19.0 is installed
-2. add odoo.conf in the root of the Odoo directory
-3. git clone this repo
-4. rename the repo to a custom module wrapper (like `custom_addon`)
-5. in the odoo.conf add the addon
-6. Start Odoo with your config `./odoo-bin -c odoo.conf`
-7. In the App page, search for `sale_purchase_link` module (make sure to search for all, not just app)
-![app_search](./assets/0__app_search.png)
-8. once the module is found, upgrade it (or you can run it with `./odoo-bin -c odoo.conf -u sale_purchase_link` upon the odoo startup)
-![module_search](./assets/0__module_search.png)
+## Module Overview
 
-Here is an example of odoo.conf at the odoo root. make sure other db configs are present, and in the conf addons_path includes the original addons which should be `addons`, as well as the module `custom_addons`. You could also include the addons_path as a flag.
+This custom module extends Odoo's Sales app to enable one-click Purchase Order creation from Sales Orders. After a PO is created, the button is hidden and a smart button appears to navigate directly between linked records. The module validates all edge cases including null line items and deposit products.
 
-```odoo.conf
-[options]
-addons_path = {PATH_TO_ODOO}/odoo/addons,{PATH_TO_ODOO}/odoo/custom_addons
-db_host = HOSTNAME
-db_port = DBPORT
+## Repository Structure
+
+```
+custom_addons/
+├── README.md                      # This file
+├── assets/                        # Screenshots and documentation images
+└── sale_purchase_link/            # Main module
+    ├── __init__.py
+    ├── __manifest__.py
+    ├── models/
+    │   ├── __init__.py
+    │   ├── sale_order.py
+    │   └── purchase_order.py
+    └── views/
+        ├── sale_order_views.xml
+        └── purchase_order_views.xml
 ```
 
-## Screenshots of the Workflow
+## Screenshots of the Workflow Confirmation
 
 ### 0. Basic Validations
 ![null_validation](./assets/0_null_line_validation.png)
@@ -65,3 +68,134 @@ db_port = DBPORT
 
 ![smart_button_calls](./assets/4_smart_button_navigation.png)
 - Calls for the smart button navigation as it appears on the server side.
+
+
+## System Requirements
+
+- Odoo 19.0 (Community or Enterprise Edition)
+- Sales app (sale) installed and enabled
+- Purchase app (purchase) installed and enabled
+- PostgreSQL database
+- Python 3.10 or higher
+
+## Installation Steps
+
+### Step 1: Clone the Repository
+
+Clone the repository into your Odoo custom addons directory:
+
+```bash
+cd /path/to/odoo/custom_addons
+git clone git@github.com:seungkilee-cs/odoo-custom-module-exercise.git sale_purchase_link
+```
+
+or, you can just download the [repository](https://github.com/seungkilee-cs/odoo-custom-module-exercise) and extract only the `sale_purchase_link` to copy over to your custom_addons directory.
+
+Your final directory structure should look like:
+
+```
+/path/to/odoo/
+├── odoo-bin
+├── addons/                 # Core Odoo modules
+├── custom_addons/
+│   ├── sale_purchase_link/ # <- Module installed here
+│   ├── assets/
+│   └── README.md
+└── odoo.conf
+```
+
+### Step 2: Configure odoo.conf
+
+If your custom addon directory is not included, ddit your Odoo configuration file to include the custom_addons path. Add or update the addons_path setting:
+
+```
+[options]
+addons_path = /path/to/odoo/addons,/path/to/odoo/custom_addons
+db_host = HOSTNAME
+db_port = DBPORT
+db_name = DBNAME
+```
+
+Replace the paths with your actual Odoo installation paths. The addons_path should include both the core addons directory and your custom_addons directory, separated by commas.
+
+### Step 3: Restart Odoo Server
+
+```bash
+./odoo-bin -c odoo.conf
+```
+
+Wait for Odoo to fully start. You should see "server ready" in the logs.
+
+### Step 4: Update Apps List
+
+1. Open Odoo in your web browser (typically http://localhost:8069)
+2. Log in with admin credentials
+3. Navigate to Apps menu (top left)
+4. Click "Update Apps List" button
+5. Wait for the update to complete
+
+### Step 5: Install the Module
+
+1. In the Apps menu, remove the "Apps" filter (search for all modules)
+![app_search](./assets/0__app_search.png)
+2. Search for "sale_purchase_link" in the search box
+3. Click on the module when it appears
+4. Click the "Install" button
+![module_search](./assets/0__module_search.png)
+
+The module will be installed and you should see "Module installed" confirmation message.
+
+### Alternative: Install via Command Line
+
+Instead of using the web interface, you can install the module directly with the upgrade flag:
+
+```bash
+./odoo-bin -c odoo.conf -u sale_purchase_link
+```
+
+This will install the module and upgrade it if needed, then exit. Use this for automated deployments.
+
+### Functional Testing Steps
+
+1. Log in to Odoo as a user with Sales permissions
+2. Navigate to Sales > Orders
+3. Create a new Sales Order
+4. Add at least one product line with quantity and unit price
+5. Confirm the Sales Order
+6. You should see a "Create Purchase Order" button in the header
+7. Click the button to create a Purchase Order
+8. After the first PO is created, the button becomes hidden
+9. A "Purchase Order" smart button appears to navigate to the created PO
+
+## Usage Guide
+
+### Creating a Purchase Order from Sales Order
+
+1. Open an existing or create a new Sales Order in draft or confirmed state
+2. Locate the "Create Purchase Order" button in the form header
+3. The button is visible only if:
+   - Sales Order status is draft or sale (confirmed)
+   - No Purchase Order has been created from this SO yet
+4. Click the button to automatically create a PO with:
+   - Same products and quantities as the SO
+   - Vendor determined by product supplier data
+   - All SO line items transferred to PO line items
+5. A notification confirms successful PO creation
+6. The "Create PO" button disappears from the SO
+7. A "Purchase Order" smart button appears to navigate to the new PO
+
+### Edge Cases Handled
+
+The module includes validation and handling for:
+
+- Null line items: Invalid SO lines are skipped
+- Deposit products: Deposit items are excluded from PO creation
+- Multi-item orders: All valid items are included in the PO
+- No supplier: Items without supplier defaults are handled gracefully
+- Duplicate PO: Once a PO is created, the button is hidden to prevent duplicates
+
+### Smart Navigation
+
+- From Sales Order: Click "Purchase" smart button to open linked PO (default module behavior)
+- From Purchase Order: Click "Sales Order" smart button to navigate back
+- Smart buttons only appear when a link exists between documents
