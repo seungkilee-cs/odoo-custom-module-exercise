@@ -196,6 +196,20 @@ The module includes validation and handling for:
 
 ### Smart Navigation
 
-- From Sales Order: Click "Purchase" smart button to open linked PO (default module behavior)
+- From Sales Order: Click "Purchase" smart button to open linked PO
 - From Purchase Order: Click "Sales Order" smart button to navigate back
 - Smart buttons only appear when a link exists between documents
+
+## Design Decisions and Caveats
+
+### Smart Button Relationship (One-to-Many)
+- Sales Order → Purchase Order uses **one-to-many** relationship (1 SO can create multiple POs)
+- Purchase Order → Sales Order shows **count of associated Sales Orders** (many-to-one display)
+- **Rationale**: Business typically requires 1:1 matching per sale item, but allows multiple purchases (for instance, if a sale is made to a business entity that has split payments like multiple credit lines, that would require 1 sale to be associated with 3 purchases). Example video showed PO smart button displaying SO count from the Purchase Order record, which would require for me to ask probing questions in business settings.
+- Current implementation prioritizes sales→purchase workflow over strict many-to-many complexity.
+- If the many to many or reverse of the current business logic is required, this can be done modifying the the id fields on both models to modify the fields.Many2many for `sale_order_ids` and `purchase_order_ids`. Not technically difficult, but potential for overengineering unless business logic is clarified.
+
+### UI Differences from Example
+- Button colors and layout follow Odoo 19 default styling, also the order of the buttons are different than what is shown in the example video.
+- Example video showed pre-customized interface not replicated, not an out of box configuration of the Sales/Purchase apps.
+- As the exercise was to build the functionality, my focus remains on core functionality: SO→PO creation + bidirectional navigation using smart buttons, and less on the configuration of the appearance.

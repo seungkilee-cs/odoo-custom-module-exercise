@@ -13,10 +13,6 @@
 
             <!-- Smart button: appears only if at least one PO exists -->
 
-            <!-- Default "Purchase" button exists once the purchase is tied to the sales -->
-            <!-- so no need to implement this sales_order side smart button. -->
-            <!-- Only configure the purchase_order side smart button for navigation. -->
-
             <!-- <xpath expr="//div[@name='button_box']" position="inside">
                 <button
                     name="action_view_purchase_orders"

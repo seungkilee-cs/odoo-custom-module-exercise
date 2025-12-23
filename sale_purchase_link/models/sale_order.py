@@ -42,7 +42,7 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
 
-        # Enforce UI expectation in server-side logic too.
+        # Enforce UI expectation in server-side logic
         if self.purchase_order_ids:
             return self.action_view_purchase_orders()
 
@@ -92,10 +92,6 @@ class SaleOrder(models.Model):
     def action_view_purchase_orders(self):
         """
         Smart button handler: open related Purchase Orders.
-        -> The default behavior actually handles this,
-        so the smart button on Sales Order side does not actually call this function.
-        But to show the understanding of the logic, I am adding this here like we did for the purchase order side
-        smart button, so we can just uncomment on the view if needed.
         """
         self.ensure_one()
         orders = self.purchase_order_ids
